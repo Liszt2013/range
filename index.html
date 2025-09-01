@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件上传漏洞靶场</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        .description {
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .content {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .upload-section, .files-section {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            flex: 1;
+        }
+        
+        h2 {
+            color: #3498db;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f1f1f1;
+        }
+        
+        .upload-form {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed #3498db;
+            border-radius: 5px;
+            background: #f8f9fa;
+            cursor: pointer;
+        }
+        
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .message {
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            display: none;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .file-list {
+            list-style: none;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f1f1;
+        }
+        
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        
+        .file-name {
+            font-weight: 500;
+        }
+        
+        .file-actions a {
+            color: #3498db;
+            text-decoration: none;
+            margin-left: 10px;
+        }
+        
+        .file-actions a:hover {
+            text-decoration: underline;
+        }
+        
+        .educational-content {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        .vulnerability, .protection {
+            margin-bottom: 25px;
+        }
+        
+        h3 {
+            color: #e74c3c;
+            margin-bottom: 15px;
+        }
+        
+        h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        
+        ul {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .code {
+            background: #2c3e50;
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        footer {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+        }
+    </style>
+.file-date {
+    color: var(--gray);
+    font-size: 0.85em;
+    margin: 0 10px;
+    flex: 0 0 160px;
+}
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>文件上传漏洞靶场</h1>
+            <p class="description">此靶场演示了文件上传功能的常见安全漏洞。请注意：这是一个用于教育目的的安全测试环境，请勿在生产环境中使用。</p>
+            <div class="warning">
+                <strong>安全警告：</strong> 此应用程序故意包含安全漏洞，仅用于教育目的。不要在真实服务器上部署此代码。
+            </div>
+        </header>
+
+        <div class="content">
+            <section class="upload-section">
+                <h2>上传文件</h2>
+                <form class="upload-form" id="uploadForm">
+                    <div class="form-group">
+                        <label for="file">选择文件上传（.php文件不允许上传）</label>
+                        <input type="file" id="file" name="file" required>
+                    </div>
+                    <button type="submit">上传文件</button>
+                </form>
+                <div id="message" class="message"></div>
+            </section>
+
+            <section class="files-section">
+                <h2>已上传文件</h2>
+                <ul class="file-list" id="fileList">
+                    <li class="file-item">
+                        <span class="file-name">example.txt</span>
+                        <div class="file-actions">
+                            <a href="#" class="view-file">查看</a>
+                            <a href="#" class="delete-file">删除</a>
+                        </div>
+                    </li>
+                    <li class="file-item">
+                        <span class="file-name">image.png</span>
+                        <div class="file-actions">
+                            <a href="#" class="view-file">查看</a>
+                            <a href="#" class="delete-file">删除</a>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+        </div>
+
+        <section class="educational-content">
+            <h2>文件上传漏洞学习</h2>
+            
+            <div class="vulnerability">
+                <h3>漏洞说明</h3>
+                <p>文件上传漏洞通常发生在应用程序允许用户上传文件但未正确验证这些文件时。攻击者可以上传恶意文件（如Web shell）从而危害服务器。</p>
+                
+                <h4>常见漏洞类型：</h4>
+                <ul>
+                    <li> insufficient_type_validation - 仅依赖客户端验证</li>
+                    <li> insufficient_file_extension_validation - 黑名单方法不完善</li>
+                    <li> unrestricted_file_upload - 无任何限制</li>
+                </ul>
+            </div>
+            
+            <div class="protection">
+                <h3>防护措施</h3>
+                <p>要防止文件上传漏洞，应采取多层防御策略：</p>
+                
+                <h4>1. 文件类型验证</h4>
+                <div class="code">
+                    // 服务器端MIME类型检查<br>
+                    $allowed = ['image/jpeg', 'image/png', 'text/plain'];<br>
+                    if (!in_array($_FILES['file']['type'], $allowed)) {<br>
+                    &nbsp;&nbsp;die('Invalid file type');<br>
+                    }
+                </div>
+                
+                <h4>2. 文件扩展名验证</h4>
+                <div class="code">
+                    // 白名单方法更安全<br>
+                    $allowed_ext = ['jpg', 'png', 'txt'];<br>
+                    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));<br>
+                    if (!in_array($ext, $allowed_ext)) {<br>
+                    &nbsp;&nbsp;die('Invalid file extension');<br>
+                    }
+                </div>
+                
+                <h4>3. 其他防护措施</h4>
+                <ul>
+                    <li>将上传的文件存储在Web根目录之外</li>
+                    <li>重命名上传的文件</li>
+                    <li>使用病毒扫描程序检查上传的文件</li>
+                    <li>设置适当的文件权限</li>
+                </ul>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>文件上传漏洞靶场 &copy; 2023 - 仅供教育目的</p>
+    </footer>
+
+    <script>
+    // 格式化文件大小
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // 显示消息
+    function showMessage(text, type) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.textContent = text;
+        messageDiv.className = 'message ' + type;
+        messageDiv.style.display = 'block';
+        
+        setTimeout(() => {
+            messageDiv.style.display = 'none';
+        }, 5000);
+    }
+
+    // 上传文件
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const fileInput = document.getElementById('file');
+        const messageDiv = document.getElementById('message');
+        const file = fileInput.files[0];
+        
+        if (!file) {
+            showMessage('请选择要上传的文件', 'error');
+            return;
+        }
+        
+        // 创建FormData对象
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            showMessage('正在上传文件...', 'success');
+            
+            // 发送到后端API
+            const response = await fetch('http://localhost:3000/api/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                showMessage(`文件上传成功！`, 'success');
+                // 刷新文件列表
+                loadFileList();
+                fileInput.value = ''; // 清空文件选择
+            } else {
+                showMessage(`上传失败: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            showMessage('网络错误，请检查服务器是否运行', 'error');
+            console.error('Upload error:', error);
+        }
+    });
+
+    // 加载文件列表
+    async function loadFileList() {
+        try {
+            const response = await fetch('http://localhost:3000/api/files');
+            const files = await response.json();
+            
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '';
+            
+            files.forEach(file => {
+                const listItem = document.createElement('li');
+                listItem.className = 'file-item';
+                listItem.innerHTML = `
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${formatFileSize(file.size)}</span>
+                    <span class="file-date">${new Date(file.uploadTime).toLocaleString()}</span>
+                    <div class="file-actions">
+                        <a href="http://localhost:3000/uploads/${file.name}" download class="download-file">下载</a>
+                        <a href="#" class="delete-file" data-filename="${file.name}">删除</a>
+                    </div>
+                `;
+                fileList.appendChild(listItem);
+            });
+        } catch (error) {
+            console.error('加载文件列表失败:', error);
+        }
+    }
+
+    // 页面加载时获取文件列表
+    document.addEventListener('DOMContentLoaded', loadFileList);
+</script>
+</body>
+</html>
