@@ -169,4 +169,41 @@ app.listen(port, () => {
 process.on('SIGINT', () => {
     console.log('\n正在关闭服务器...');
     process.exit(0);
+
+});
+
+// 添加一个管理页面路由
+app.get('/admin', (req, res) => {
+    const adminKey = req.query.key;
+    
+    // 简单的密码验证
+    if (adminKey !== '130611') {
+        return res.status(403).send('访问被拒绝');
+    }
+    
+    // 读取文件列表并显示
+    fs.readdir(uploadDir, (err, files) => {
+        if (err) {
+            return res.status(500).send('无法读取文件列表');
+        }
+        
+        let fileListHtml = '<h1>上传文件管理</h1><ul>';
+        files.forEach(file => {
+            fileListHtml += `<li>${file} <a href="/uploads/${file}">下载</a> <a href="/admin/delete?file=${file}&key=130611">删除</a></li>`;
+        });
+        fileListHtml += '</ul>';
+        
+        res.send(fileListHtml);
+    });
+});
+
+// 添加删除功能
+app.get('/admin/delete', (req, res) => {
+    if (req.query.key !== '130611') {
+        return res.status(403).send('访问被拒绝');
+    }
+    
+    const filePath = path.join(uploadDir, req.query.file);
+    fs.unlinkSync(filePath);
+    res.redirect('/admin?key=130611');
 });
